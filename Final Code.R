@@ -1,6 +1,6 @@
 ######################## EDA ########################
 ##################### Initializing Environment #####################
-setwd("/Users/dongyangwang/Desktop/UW/Stat 527")
+setwd("/Users/dongyangwang/Desktop/UW/First Year Grad/Spring 2022/Stat 527")
 rm(list=ls())
 
 # Library
@@ -146,6 +146,13 @@ split <- sample(total_row, total_row*0.8)
 train <- income_data[split,]
 test<- income_data[-split,]
 
+# Split train dataset into training set and validation set
+train_row = nrow(train)
+split_val <- sample(train_row, train_row*0.8)
+
+model_train <- train[split_val,]
+validation<- train[-split_val,]
+
 ##################### Logistic Regression ##################### 
 # Build the regression model based on training set
 # Specify a null model with no predictors
@@ -159,13 +166,6 @@ step_model <- step(null_model, scope = list(lower = null_model, upper = full_mod
 
 # The summary below shows that all variables should be included based on AIC
 summary(step_model)
-
-# Split train dataset into training set and validation set
-train_row = nrow(train)
-split_val <- sample(train_row, train_row*0.8)
-
-model_train <- train[split_val,]
-validation<- train[-split_val,]
 
 # Utilize validation set to determine threshold with best accuracy
 
@@ -427,22 +427,22 @@ numbers <- seq(1:length(neighbors))
 
 # Cross validate (5 folds) to find the best number of neighbors:
 # Here the training set is divided into training and validation sets
-cv_accurracy_knn <- function(data = train_knn, i, k = 5){
+cv_accurracy_knn <- function(data = train_knn, i, num = 5){
   
   # Create folds randomly
   n <- nrow(data)
-  folds <- sample(rep(1:k, length = n))
+  folds <- sample(rep(1:num, length = n))
   
   # Create vector to store results
-  accuracy <- rep(NA, k)
-  for(j in 1:k){
+  accuracy <- rep(NA, num)
+  for(j in 1:num){
     
     # Train model
     train_cv <- folds != j
     data_train <- data[train_cv, ]
     data_test <- data[!train_cv, ]
     
-    cv_model <- knn(data_train[,-7],data_test[,-7], 
+    cv_model <- class::knn(data_train[,-7],data_test[,-7], 
                     cl = data_train$income, k = neighbors[i])
     
     # Compute accuracy on fold j (not used for training)
@@ -454,15 +454,16 @@ cv_accurracy_knn <- function(data = train_knn, i, k = 5){
 }
 
 # CV for best number of neighbors on the training set
-accuracy_knn <- sapply(numbers, function(number) cv_accurracy_knn(i = number))
+
+accuracy_knn <- sapply(numbers, function(number) cv_accurracy_knn(data = train_knn, i = number, num = 5))
 
 # Best number of neighbors
 best_knn <- neighbors[which.max(accuracy_knn)]
 
 # Fit the model on test data
-knn_model <- knn(train_knn[,-7],test_knn[,-7], 
+knn_model <- class::knn(train_knn[,-7],test_knn[,-7], 
                  cl = train_knn$income, k = best_knn, prob =TRUE)
-knn(train_knn[,-7],test_knn[,-7], cl = train_knn$income, use.all = TRUE)
+class::knn(train_knn[,-7],test_knn[,-7], cl = train_knn$income, use.all = TRUE)
 
 obtain_metric_knn<-function(knn_model,test_knn){
   
@@ -494,7 +495,7 @@ obtain_metric_knn<-function(knn_model,test_knn){
 }
 
 knn_metric<-obtain_metric_knn(knn_model, test_knn)
-#knn_metric
+knn_metric
 
 
 ##################### SVM ##################### 
@@ -507,7 +508,7 @@ normalize <- function(x) {
   return ((x - min(x)) / (max(x) - min(x)))
 }
 
-# Normalization will significantly imrpove speed for running the data
+# Normalization will significantly improve speed for running the data
 svm_data$age <- normalize(svm_data$age)
 svm_data$fnlwgt <- normalize(svm_data$fnlwgt)
 svm_data$educational_num <- normalize(svm_data$educational_num)
